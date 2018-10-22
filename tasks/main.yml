@@ -1,0 +1,57 @@
+- name: Force cache update (--extra-vars="forceupdate=true")
+  become: true
+  when: forceupdate | bool
+  set_fact:
+    cachevalidity: 0
+- name: Update repositories cache
+  become: true
+  apt:
+    update_cache: yes
+    # one day
+    cache_valid_time: "{{ cachevalidity | default(86400) }}"
+
+- name: Check if there are packages available to be installed/upgraded
+  command: apt list --upgradable
+  changed_when: false
+  register: packages
+- name: Output updateable packages
+  when: "packages.stdout != 'Listing...' and packages.stdout != 'Auflistung...'"
+  changed_when: true
+  debug:
+    var: packages.stdout_lines
+
+- name: Check manually held packages
+  command: apt-mark showhold
+  register: heldpackages
+  changed_when: false
+  failed_when: "holdpackage is defined and heldpackages.stdout_lines|join(',')  != holdpackage"
+- name: Output manually held packages
+  when: "heldpackages.stdout == '' and holdpackage is defined or heldpackages.stdout != '' and holdpackage is defined and heldpackages.stdout_lines|join(',')  != holdpackage"
+  changed_when: true
+  debug:
+    var: heldpackages.stdout_lines
+
+- name: dist-upgrade packages (--extra-vars="upgrade=true")
+  become: true
+  when: upgrade | bool
+  apt:
+    upgrade: dist
+
+- name: Autoremove
+  become: true
+  apt:
+    autoremove: yes
+- name: Autoclean
+  become: true
+  apt:
+    autoclean: yes
+
+- name: Reboot is required if changed
+  register: rebootrequired
+  changed_when: "rebootrequired.stat.exists == true"
+  stat:
+    path: /var/run/reboot-required
+    get_md5: no
+- name: Reboot the server (--extra-vars="reboot=true")
+  command: /sbin/reboot
+  when: reboot == true and rebootrequired.stat.exists == true
