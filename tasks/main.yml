@@ -47,11 +47,13 @@
     autoclean: yes
 
 - name: Reboot is required if changed
-  register: rebootrequired
-  changed_when: "rebootrequired.stat.exists == true"
   stat:
     path: /var/run/reboot-required
     get_md5: no
+  register: rebootrequired
+  changed_when: "rebootrequired.stat.exists == true"
+
 - name: Reboot the server (--extra-vars="reboot=true")
+  become: true
   command: /sbin/reboot
-  when: reboot == true and rebootrequired.stat.exists == true
+  when: reboot | bool == true and rebootrequired.stat.exists == true
