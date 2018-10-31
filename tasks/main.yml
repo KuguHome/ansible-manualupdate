@@ -53,7 +53,7 @@
   register: rebootrequired
   changed_when: "rebootrequired.stat.exists == true"
 
-- name: Reboot the server (--extra-vars="reboot=true")
+- name: Reboot (--extra-vars="reboot=true")
   become: true
   command: /sbin/reboot
   when: reboot | bool == true and rebootrequired.stat.exists == true
