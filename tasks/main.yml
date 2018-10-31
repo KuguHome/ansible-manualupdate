@@ -57,3 +57,10 @@
   become: true
   command: /sbin/reboot
   when: reboot | bool == true and rebootrequired.stat.exists == true
+  async: 1
+  poll: 0
+  ignore_errors: true
+
+#- name: "Wait for host to come back"
+#  local_action: wait_for host={{ real_ansible_host }} port=22 state=started delay=10
+#  become: false
