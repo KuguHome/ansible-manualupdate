@@ -34,8 +34,13 @@
 - name: dist-upgrade packages (--extra-vars="upgrade=true")
   become: true
   when: upgrade | bool
+  register: upgraded
   apt:
     upgrade: dist
+
+- name: show upgraded
+  debug:
+    msg: "{{upgraded.stdout_lines}}"
 
 - name: Autoremove
   become: true
