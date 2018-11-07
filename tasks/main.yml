@@ -39,6 +39,7 @@
     upgrade: dist
 
 - name: show upgraded
+  when: upgrade | bool
   debug:
     msg: "{{upgraded.stdout_lines}}"
 
