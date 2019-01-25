@@ -60,6 +60,12 @@
   changed_when: "rebootrequired.stat.exists == true"
 
 - name: Reboot (--extra-vars="reboot=true")
+  when: reboot | bool == true and rebootrequired.stat.exists == true
   become: true
   reboot:
-  when: reboot | bool == true and rebootrequired.stat.exists == true
+    connect_timeout: 10
+    reboot_timeout: 30
+  register: reboot_result
+- name: reboot result
+  debug:
+    msg: "{{reboot_result}}"
