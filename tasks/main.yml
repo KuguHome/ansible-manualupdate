@@ -1,16 +1,11 @@
-- name: Force cache update (--extra-vars="forceupdate=true")
-  become: true
-  when: forceupdate | bool
-  set_fact:
-    cachevalidity: 0
-- name: Update repositories cache
+- name: Update repositories cache (--extra-vars="forceupdate=true")
   become: true
   apt:
     update_cache: yes
     # one day
-    cache_valid_time: "{{ cachevalidity | default(86400) }}"
+    cache_valid_time:  "{{ (forceupdate | bool == true) | ternary('0','86400') }}"
 
-- name: Check if there are packages available to be installed/upgraded
+- name: Check whether there are packages available to be installed/upgraded
   command: apt list --upgradable
   changed_when: false
   register: packages
@@ -67,5 +62,6 @@
     reboot_timeout: 30
   register: reboot_result
 - name: reboot result
+  when: reboot_result is defined and reboot_result.skipped != true
   debug:
     msg: "{{reboot_result}}"
