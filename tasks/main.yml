@@ -1,4 +1,4 @@
-- name: Update repositories cache (--extra-vars="forceupdate=true")
+- name: Update repositories cache (--extra-vars="forceupdate=true" if newer than 1 day)
   become: true
   apt:
     update_cache: yes
@@ -14,8 +14,10 @@
   changed_when: true
   debug:
     var: packages.stdout_lines
+  register: updateavailable
 
 - name: Check manually held packages
+  tags: upgrade
   command: apt-mark showhold
   register: heldpackages
   changed_when: false
@@ -27,27 +29,31 @@
     var: heldpackages.stdout_lines
 
 - name: dist-upgrade packages (--extra-vars="upgrade=true")
+  tags: upgrade
   become: true
-  when: upgrade | bool
+  when: upgrade | bool and (packages is not defined or updateavailable.changed)
   register: upgraded
   apt:
     upgrade: dist
-
 - name: show upgraded
-  when: upgrade | bool
+  tags: upgrade
+  when: upgrade | bool and upgraded.changed
   debug:
     msg: "{{upgraded.stdout_lines}}"
 
 - name: Autoremove
+  tags: cleanup
   become: true
   apt:
     autoremove: yes
 - name: Autoclean
+  tags: cleanup
   become: true
   apt:
     autoclean: yes
 
 - name: Reboot is required if changed
+  tags: reboot
   stat:
     path: /var/run/reboot-required
     get_md5: no
@@ -55,6 +61,7 @@
   changed_when: "rebootrequired.stat.exists == true"
 
 - name: Reboot (--extra-vars="reboot=true")
+  tags: reboot
   when: reboot | bool == true and rebootrequired.stat.exists == true
   become: true
   reboot:
@@ -62,6 +69,7 @@
     reboot_timeout: 30
   register: reboot_result
 - name: reboot result
+  tags: reboot
   when: reboot_result is defined and reboot_result.skipped != true
   debug:
     msg: "{{reboot_result}}"
