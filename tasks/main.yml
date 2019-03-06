@@ -69,13 +69,13 @@
     reboot_timeout: 5
   ignore_errors: yes
   register: reboot_result
+- name: reboot result
+  tags: reboot
+  when: reboot | bool == true and reboot_result is defined and (reboot_result.skipped is not defined or reboot_result.skipped != true)
+  debug:
+    msg: "{{reboot_result}}"
 - name: wait for connection
-  when: reboot_result is defined and reboot_result.skipped != true
+  when: reboot | bool == true and reboot_result is defined and (reboot_result.skipped is not defined or reboot_result.skipped != true)
   wait_for_connection:
     delay: 3
     timeout: 120
-- name: reboot result
-  tags: reboot
-  when: reboot_result is defined and reboot_result.skipped != true
-  debug:
-    msg: "{{reboot_result}}"
