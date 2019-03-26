@@ -3,7 +3,7 @@
   apt:
     update_cache: yes
     # one day
-    cache_valid_time:  "{{ (forceupdate | bool == true) | ternary('0','86400') }}"
+    cache_valid_time:  "{{ (forceupdate | bool ) | ternary('0','86400') }}"
 
 - name: Check whether there are packages available to be installed/upgraded
   command: apt list --upgradable
@@ -23,7 +23,7 @@
   changed_when: false
   failed_when: "holdpackage is defined and heldpackages.stdout_lines|join(',')  != holdpackage"
 - name: Output manually held packages
-  when: "heldpackages.stdout == '' and holdpackage is defined or heldpackages.stdout != '' and holdpackage is defined and heldpackages.stdout_lines|join(',')  != holdpackage"
+  when: "not heldpackages.stdout and holdpackage is defined or heldpackages.stdout and holdpackage is defined and heldpackages.stdout_lines|join(',')  != holdpackage"
   changed_when: true
   debug:
     var: heldpackages.stdout_lines
@@ -39,7 +39,7 @@
   tags: upgrade
   when: upgrade | bool and upgraded.changed
   debug:
-    msg: "{{upgraded.stdout_lines}}"
+    msg: "{{ upgraded.stdout_lines }}"
 
 - name: Autoremove
   tags: cleanup
@@ -58,11 +58,11 @@
     path: /var/run/reboot-required
     get_md5: no
   register: rebootrequired
-  changed_when: "rebootrequired.stat.exists == true"
+  changed_when: rebootrequired.stat.exists
 
 - name: Reboot (--extra-vars="reboot=true")
   tags: reboot
-  when: reboot | bool == true and rebootrequired.stat.exists == true
+  when: reboot | bool and rebootrequired.stat.exists
   become: true
   reboot:
     connect_timeout: 10
@@ -71,11 +71,11 @@
   register: reboot_result
 - name: reboot result
   tags: reboot
-  when: reboot | bool == true and reboot_result is defined and (reboot_result.skipped is not defined or reboot_result.skipped != true)
+  when: reboot | bool and reboot_result is defined and (reboot_result.skipped is not defined or not reboot_result.skipped)
   debug:
-    msg: "{{reboot_result}}"
+    msg: "{{ reboot_result }}"
 - name: wait for connection
-  when: reboot | bool == true and reboot_result is defined and (reboot_result.skipped is not defined or reboot_result.skipped != true)
+  when: reboot | bool and reboot_result is defined and (reboot_result.skipped is not defined or not reboot_result.skipped)
   wait_for_connection:
     delay: 3
     timeout: 120
