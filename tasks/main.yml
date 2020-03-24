@@ -16,14 +16,20 @@
     var: packages.stdout_lines
   register: updateavailable
 
+- name: Ensure holdpackage is a list
+  set_fact:
+    holdpackage: "{{ [holdpackage] }}"
+  when: (holdpackage | type_debug) == 'unicode'
+
 - name: Check manually held packages
   tags: upgrade
   command: apt-mark showhold
   register: heldpackages
   changed_when: false
-  failed_when: "holdpackage is defined and heldpackages.stdout_lines|join(',')  != holdpackage"
+  failed_when: "holdpackage is defined and heldpackages.stdout_lines != holdpackage"
+
 - name: Output manually held packages
-  when: "not heldpackages.stdout and holdpackage is defined or heldpackages.stdout and holdpackage is defined and heldpackages.stdout_lines|join(',')  != holdpackage"
+  when: "not heldpackages.stdout and holdpackage is defined or heldpackages.stdout and holdpackage is defined and heldpackages != holdpackage"
   changed_when: true
   debug:
     var: heldpackages.stdout_lines
