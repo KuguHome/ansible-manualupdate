@@ -21,7 +21,7 @@
     holdpackage: "{{ [holdpackage] }}"
   when: (holdpackage | type_debug) == 'unicode'
 
-- name: Check manually held packages
+- name: Check manually held packages (heldpackages.stdout_lines == holdpackage)
   tags: upgrade
   command: apt-mark showhold
   register: heldpackages
@@ -33,6 +33,12 @@
   changed_when: true
   debug:
     var: heldpackages.stdout_lines
+
+- name: Record heldpackages as custom stat (set show_custom_stats in ansible.cfg or ANSIBLE_SHOW_CUSTOM_STATS=yes in env)
+  set_stats:
+    per_host: yes
+    data:
+      heldpackages: "{{ heldpackages.stdout_lines }}"
 
 - name: dist-upgrade packages (--extra-vars="upgrade=true")
   tags: upgrade
