@@ -72,6 +72,12 @@
   register: rebootrequired
   changed_when: rebootrequired.stat.exists
 
+- name: Record rebootrequired as custom stat (set show_custom_stats in ansible.cfg or ANSIBLE_SHOW_CUSTOM_STATS=yes in env)
+  set_stats:
+    per_host: yes
+    data:
+      rebootnecessary: "{{ rebootrequired.stat.exists }}"
+
 - name: Reboot (--extra-vars="reboot=true")
   tags: reboot
   when: reboot | bool and rebootrequired.stat.exists
