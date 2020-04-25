@@ -11,13 +11,14 @@
   register: packages
 - name: Output updateable packages
   when: "packages.stdout != 'Listing...' and packages.stdout != 'Auflistung...'"
-#  changed_when: true
+  changed_when: true
   debug:
     var: packages.stdout_lines
   register: updateavailable
 
 - name: Unhold package from upgrading
   with_items: "{{ forceupgrade_packages }}"
+  when: item in packages.stdout_lines
   become: true
   command: "apt-mark unhold {{ item }}"
   register: unholditem
@@ -46,10 +47,10 @@
   command: apt-mark showhold
   register: heldpackages
   changed_when: false
-  failed_when: "holdpackage is defined and holdpackage is subset(heldpackages.stdout_lines)
+  failed_when: "holdpackage is defined and holdpackage is not subset(heldpackages.stdout_lines)"
 
 - name: Output manually held packages
-  when: "not heldpackages.stdout and holdpackage is defined or heldpackages.stdout and holdpackage is defined and heldpackages != holdpackage"
+  when: "holdpackage is defined and not heldpackages.stdout or holdpackage is defined and heldpackages.stdout and heldpackages.stdout_lines != holdpackage"
 #  changed_when: true
   debug:
     var: heldpackages.stdout_lines
