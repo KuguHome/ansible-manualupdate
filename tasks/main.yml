@@ -11,10 +11,30 @@
   register: packages
 - name: Output updateable packages
   when: "packages.stdout != 'Listing...' and packages.stdout != 'Auflistung...'"
-  changed_when: true
+#  changed_when: true
   debug:
     var: packages.stdout_lines
   register: updateavailable
+
+- name: Unhold package from upgrading
+  with_items: "{{ forceupgrade_packages }}"
+  become: true
+  command: "apt-mark unhold {{ item }}"
+  register: unholditem
+  changed_when: "unholditem.stdout == 'Canceled hold on ' + item + '.' or unholditem.stdout == 'Halten-Markierung für ' + item + ' entfernt.'"
+- name: Upgrade forceupgrade_packages
+  become: true
+  apt:
+    name: "{{ forceupgrade_packages }}"
+    state: latest
+    only_upgrade: yes
+    dpkg_options: "{{ forceupgrade_dpkg_options }}"
+- name: Hold package from upgrading
+  with_items: "{{ forceupgrade_packages }}"
+  become: true
+  command: "apt-mark hold {{ item }}"
+  register: holditem
+  changed_when: "holditem.stdout == item + ' set on hold.' or holditem.stdout == item + ' auf Halten gesetzt.'"
 
 - name: Ensure holdpackage is a list
   set_fact:
@@ -26,11 +46,11 @@
   command: apt-mark showhold
   register: heldpackages
   changed_when: false
-  failed_when: "holdpackage is defined and heldpackages.stdout_lines != holdpackage"
+  failed_when: "holdpackage is defined and holdpackage is subset(heldpackages.stdout_lines)
 
 - name: Output manually held packages
   when: "not heldpackages.stdout and holdpackage is defined or heldpackages.stdout and holdpackage is defined and heldpackages != holdpackage"
-  changed_when: true
+#  changed_when: true
   debug:
     var: heldpackages.stdout_lines
 
