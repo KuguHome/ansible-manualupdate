@@ -8,9 +8,10 @@
 - name: Check whether there are packages available to be installed/upgraded
   command: apt list --upgradable
   changed_when: false
+  check_mode: no
   register: packages
 - name: Output updateable packages
-  when: "packages.stdout != 'Listing...' and packages.stdout != 'Auflistung...'"
+  when: "packages.stdout is defined and packages.stdout != 'Listing...' and packages.stdout != 'Auflistung...'"
   changed_when: true
   debug:
     var: packages.stdout_lines
@@ -45,6 +46,7 @@
 - name: Check manually held packages (heldpackages.stdout_lines == holdpackage)
   tags: upgrade
   command: apt-mark showhold
+  check_mode: no
   register: heldpackages
   changed_when: false
   failed_when: "holdpackage is defined and holdpackage is not subset(heldpackages.stdout_lines)"
