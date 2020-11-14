@@ -11,7 +11,7 @@
   check_mode: no
   register: packages
 - name: Output updateable packages
-  when: "packages.stdout is defined and packages.stdout != 'Listing...' and packages.stdout != 'Auflistung...'"
+  when: "not packages.skipped | default (false) and (packages | default('', true) | trim != '') and packages.stdout is defined and packages.stdout != 'Listing...' and packages.stdout != 'Auflistung...'"
   changed_when: true
   debug:
     var: packages.stdout_lines
@@ -46,8 +46,8 @@
 - name: Check manually held packages (heldpackages.stdout_lines == holdpackage)
   tags: upgrade
   command: apt-mark showhold
-  check_mode: no
   register: heldpackages
+  check_mode: no
   changed_when: false
   failed_when: "holdpackage is defined and holdpackage is not subset(heldpackages.stdout_lines)"
 
@@ -58,6 +58,7 @@
     var: heldpackages.stdout_lines
 
 - name: Record heldpackages as custom stat (set show_custom_stats in ansible.cfg or ANSIBLE_SHOW_CUSTOM_STATS=yes in env)
+  when: "not heldpackages.skipped | default (false)"
   set_stats:
     per_host: yes
     data:
@@ -112,12 +113,12 @@
   register: reboot_result
 - name: reboot result
   tags: reboot
-  when: reboot | bool and reboot_result is defined and (reboot_result.skipped is not defined or not reboot_result.skipped)
+  when: reboot | bool and reboot_result is defined and (not reboot_result.skipped | default (false))
   debug:
     msg: "{{ reboot_result }}"
 - name: wait for connection
   tags: reboot
-  when: reboot | bool and reboot_result is defined and (reboot_result.skipped is not defined or not reboot_result.skipped)
+  when: reboot | bool and reboot_result is defined and (not reboot_result.skipped | default (false))
   wait_for_connection:
     delay: 3
     timeout: 120
