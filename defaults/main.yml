@@ -1,5 +1,6 @@
 forceupdate: false
 upgrade: false
 reboot: false
+forcereboot: false
 forceupgrade_packages: []
 forceupgrade_dpkg_options: 'force-confnew' #  overwrite configurations

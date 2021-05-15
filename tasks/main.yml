@@ -104,7 +104,7 @@
 
 - name: Reboot (--extra-vars="reboot=true")
   tags: reboot
-  when: reboot | bool and rebootrequired.stat.exists
+  when: (reboot | bool and rebootrequired.stat.exists) or forcereboot | bool
   become: true
   reboot:
     connect_timeout: 10
@@ -113,12 +113,12 @@
   register: reboot_result
 - name: reboot result
   tags: reboot
-  when: reboot | bool and reboot_result is defined and (not reboot_result.skipped | default (false))
+  when: (reboot | bool or forcereboot | bool) and reboot_result is defined and (not reboot_result.skipped | default (false))
   debug:
     msg: "{{ reboot_result }}"
 - name: wait for connection
   tags: reboot
-  when: reboot | bool and reboot_result is defined and (not reboot_result.skipped | default (false))
+  when: (reboot | bool or forcereboot | bool) and reboot_result is defined and (not reboot_result.skipped | default (false))
   wait_for_connection:
     delay: 3
     timeout: 120
